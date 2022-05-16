@@ -7,6 +7,7 @@ type
     elements: OrderedSet[T]
     iterationDepth: int
     pendingElements: OrderedTable[T, bool]
+    pendingClear: bool
 
 proc newSafeSet*[T](): SafeSet[T] =
   SafeSet[T]()
@@ -21,6 +22,11 @@ template removeNow[T](this: SafeSet[T], t: T) =
   ## Unsafe immediate removal of elements.
   this.elements.excl(t)
 
+template clearNow(this: SafeSet) =
+  this.elements.clear()
+  this.pendingElements.clear()
+  this.pendingClear = false
+
 proc add*[T](this: SafeSet[T], t: T) =
   ## Adds an item to the set.
   if this.areElementsLocked():
@@ -34,6 +40,10 @@ proc remove*[T](this: SafeSet[T], t: T) =
     this.pendingElements[t] = false
   else:
     this.removeNow(t)
+
+proc contains*[T](this: SafeSet[T], t: T): bool =
+  ## If the set currently contains an item, before checking pending elements.
+  return this.elements.contains(t)
 
 iterator items*[T](this: SafeSet[T]): T =
   ## Safely iterates over the items in the set.
@@ -51,23 +61,35 @@ iterator items*[T](this: SafeSet[T]): T =
 
     # Process and clear pending elements.
     if not this.areElementsLocked():
-      for element, adding in this.pendingElements.pairs():
-        if adding:
-          this.addNow(element)
-        else:
-          this.removeNow(element)
-      this.pendingElements.clear()
+      if this.pendingClear:
+        this.clearNow()
+      else:
+        for element, adding in this.pendingElements.pairs():
+          if adding:
+            this.addNow(element)
+          else:
+            this.removeNow(element)
+        this.pendingElements.clear()
 
 proc len*(this: SafeSet): int =
   ## The number of effective elements in the set.
-  result = this.elements.len
+  if this.pendingClear:
+    this.clearNow()
+  else:
+    result = this.elements.len
 
-  if this.areElementsLocked():
-    for element, adding in this.pendingElements.pairs():
-      let isInElements = this.elements.contains(element)
-      if adding:
-        if not isInElements:
-          result += 1
-      elif isInElements:
-        result -= 1
+    if this.areElementsLocked():
+      for element, adding in this.pendingElements.pairs():
+        let isInElements = this.elements.contains(element)
+        if adding:
+          if not isInElements:
+            result += 1
+        elif isInElements:
+          result -= 1
+
+proc clear*(this: SafeSet) =
+  if not this.areElementsLocked():
+    this.clearNow():
+  else:
+    this.pendingClear = true
 
