@@ -1,6 +1,6 @@
 # Package
 
-version       = "0.1.0"
+version       = "0.1.1"
 author        = "Avahe Kellenberger"
 description   = "Set that can safely add and remove elements while iterating."
 license       = "GPL-2.0-only"
@@ -9,5 +9,5 @@ srcDir        = "src"
 # Dependencies
 
 requires "nim >= 1.6.4"
-requires "nimtest >= 0.1.1"
+requires "nimtest >= 0.1.2"
 
