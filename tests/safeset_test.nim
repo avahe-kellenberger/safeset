@@ -1,7 +1,22 @@
 import
   nimtest,
   safeset,
-  sequtils
+  sequtils,
+  hashes,
+  sets
+
+var i: int = 0
+
+type Foo = object
+  id: int
+  children: SafeSet[Foo]
+
+proc newFoo(): Foo =
+  result = Foo(id: i, children: newSafeSet[Foo]())
+  inc i
+
+proc hash*(f: Foo): Hash =
+  hash(f.id)
 
 describe "SafeSet":
 
@@ -78,4 +93,16 @@ describe "SafeSet":
         items,
         @["foobar", "aoeu", "something", "htns"]
       )
+
+  describe "contains":
+
+    it "reports when a safeset contains an element properly":
+      let
+        parent = newFoo()
+        child = newFoo()
+
+      assertEquals(parent.children.contains(child), false)
+
+      parent.children.add(child)
+      assertEquals(parent.children.contains(child), true)
 

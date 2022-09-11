@@ -10,7 +10,7 @@ type
     pendingClear: bool
 
 proc newSafeSet*[T](): SafeSet[T] =
-  SafeSet[T]()
+  SafeSet[T](elements: initOrderedSet[T]())
 
 proc areElementsLocked*[T](this: SafeSet[T]): bool =
   this.iterationDepth > 0
